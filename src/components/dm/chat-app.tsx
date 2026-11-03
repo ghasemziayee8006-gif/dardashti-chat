@@ -17,10 +17,21 @@ import { cn } from '@/lib/utils'
 
 const TOKEN_KEY = 'dm-token'
 /** داخل تطبيق أندرويد (WebView) نحفظ الجلسة في localStorage لتبقى بعد إغلاق التطبيق،
- *  وفي المتصفح نستخدم sessionStorage ليتاح اختبار حسابين في تبويبين مختلفين. */
+ *  وفي المتصفح نستخدم sessionStorage ليتاح اختبار حسابين في تبويبين مختلفين.
+ *  ملاحظة: الوصول للتخزين يجب أن يكون داخل دوال فقط (لا على مستوى الوحدة) لأن
+ *  المكوّن يُعرض على الخادم أيضًا حيث لا توجد واجهات التخزين. */
 const IS_ANDROID_APP = typeof navigator !== 'undefined' && /DardashtiApp/.test(navigator.userAgent)
-const tokenStore: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> =
-  IS_ANDROID_APP && typeof localStorage !== 'undefined' ? localStorage : sessionStorage
+
+function tokenGet(): string | null {
+  if (typeof window === 'undefined') return null
+  try { return (IS_ANDROID_APP ? window.localStorage : window.sessionStorage).getItem(TOKEN_KEY) } catch { return null }
+}
+function tokenSet(t: string): void {
+  try { (IS_ANDROID_APP ? window.localStorage : window.sessionStorage).setItem(TOKEN_KEY, t) } catch { /* noop */ }
+}
+function tokenDel(): void {
+  try { (IS_ANDROID_APP ? window.localStorage : window.sessionStorage).removeItem(TOKEN_KEY) } catch { /* noop */ }
+}
 
 export function ChatApp() {
   const [booting, setBooting] = useState(true)
@@ -61,7 +72,7 @@ export function ChatApp() {
 
   // ---------- socket lifecycle ----------
   useEffect(() => {
-    tokenRef.current = tokenStore.getItem(TOKEN_KEY)
+    tokenRef.current = tokenGet()
     setHasSession(!!tokenRef.current)
     const s = getSocket()
 
@@ -124,7 +135,7 @@ export function ChatApp() {
 
     const onLoginError = () => {
       tokenRef.current = null
-      tokenStore.removeItem(TOKEN_KEY)
+      tokenDel()
       setMe(null)
       setHasSession(false)
       setBooting(false)
@@ -133,7 +144,7 @@ export function ChatApp() {
 
     const onSessionReplaced = () => {
       tokenRef.current = null
-      tokenStore.removeItem(TOKEN_KEY)
+      tokenDel()
       setMe(null)
       setHasSession(false)
       toast({ title: 'تم فتح الحساب من نافذة أخرى' })
@@ -280,7 +291,7 @@ export function ChatApp() {
   /** called by LoginScreen after a successful REST register/login */
   const authSuccess = (token: string, user: AuthUser) => {
     tokenRef.current = token
-    tokenStore.setItem(TOKEN_KEY, token)
+    tokenSet(token)
     setHasSession(true)
     setMe(user) // optimistic; login:ok confirms
     const s = getSocket()
@@ -289,7 +300,7 @@ export function ChatApp() {
   }
 
   const logout = () => {
-    tokenStore.removeItem(TOKEN_KEY)
+    tokenDel()
     tokenRef.current = null
     setMe(null)
     setHasSession(false)
