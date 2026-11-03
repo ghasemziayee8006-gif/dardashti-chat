@@ -1,0 +1,45 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths: [ 'android/**' ]
+
+permissions:
+  contents: write
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: تحميل الكود
+        uses: actions/checkout@v4
+
+      - name: تثبيت Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: بناء APK
+        run: |
+          cd android
+          gradle wrapper --gradle-version 8.7 --no-daemon
+          ./gradlew assembleDebug --no-daemon
+
+      - name: حفظ APK كأرشيف (نسخة احتياطية)
+        uses: actions/upload-artifact@v4
+        with:
+          name: dardashti-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: إنشاء إصدار ورفع APK في Releases
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="v1.$(date +%Y%m%d%H%M%S)"
+          gh release create "$TAG" android/app/build/outputs/apk/debug/app-debug.apk \
+            --title "تطبيق دردشتي لأندرويد — $TAG" \
+            --notes "نسخة 1.1 — عميل حقيقي يتصل بالخادم: حسابات فعلية، دردشة لحظية، مكالمات فيديو وصوت، مشاركة شاشة. يعمل بدون إنترنت بشاشة أنيقة، وعنوان الخادم قابل للتغيير من داخل التطبيق." \
+            --latest

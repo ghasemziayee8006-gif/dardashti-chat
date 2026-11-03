@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+db/
+*.db
+*.log
+.env*
+next-env.d.ts
+.DS_Store
+*.iml
+.gradle/
+build/
+captures/
+.externalNativeBuild
+.cxx
+local.properties

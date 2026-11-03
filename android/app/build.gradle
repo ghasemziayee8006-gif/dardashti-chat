@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.dardashti.chat'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.dardashti.chat"
+        minSdk 21
+        targetSdk 34
+        versionCode 2
+        versionName "1.1"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+}
+
+// عميل رفيع للخادم الحقيقي — بدون مكتبات خارجية لضمان حجم صغير وسرعة بناء
